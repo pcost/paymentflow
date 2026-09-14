@@ -1,0 +1,19 @@
+global:
+  environment: "prod"
+  imageTag: "prod"
+
+api-gateway:
+  replicas: 3
+
+order-service:
+  replicas: 2
+
+payment-service:
+  replicas: 2
+
+notification-service:
+  replicas: 3
+
+postgresql:
+  replicas: 1
+

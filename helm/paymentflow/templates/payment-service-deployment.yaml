@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+  labels:
+    app: paymentflow
+    component: payment-service
+spec:
+  replicas: {{ .Values.payment_service.replicas }}
+  selector:
+    matchLabels:
+      app: paymentflow
+      component: payment-service
+  template:
+    metadata:
+      labels:
+        app: paymentflow
+        component: payment-service
+      annotations:
+        config.checksum: "{{ .Values.global.configChecksum }}"
+    spec:
+      containers:
+      - name: payment-service
+        image: "{{ .Values.payment_service.image }}:{{ .Values.global.imageTag }}"
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        env:
+        - name: APP_ENV
+          value: "{{ .Values.global.environment }}"
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://postgres:5432/payments"
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: paymentflow-db-secret
+              key: DB_USER
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: paymentflow-db-secret
+              key: DB_PASSWORD
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "{{ .Values.payment_service.resources.requests.memory }}"
+            cpu: "{{ .Values.payment_service.resources.requests.cpu }}"
+          limits:
+            memory: "{{ .Values.payment_service.resources.limits.memory }}"
+            cpu: "{{ .Values.payment_service.resources.limits.cpu }}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+spec:
+  selector:
+    app: paymentflow
+    component: payment-service
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+  type: ClusterIP

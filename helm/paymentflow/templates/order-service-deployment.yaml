@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+  labels:
+    app: paymentflow
+    component: order-service
+spec:
+  replicas: {{ .Values.order_service.replicas }}
+  selector:
+    matchLabels:
+      app: paymentflow
+      component: order-service
+  template:
+    metadata:
+      labels:
+        app: paymentflow
+        component: order-service
+      annotations:
+        config.checksum: "{{ .Values.global.configChecksum }}"
+    spec:
+      containers:
+      - name: order-service
+        image: "{{ .Values.order_service.image }}:{{ .Values.global.imageTag }}"
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        env:
+        - name: APP_ENV
+          value: "{{ .Values.global.environment }}"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "{{ .Values.order_service.resources.requests.memory }}"
+            cpu: "{{ .Values.order_service.resources.requests.cpu }}"
+          limits:
+            memory: "{{ .Values.order_service.resources.limits.memory }}"
+            cpu: "{{ .Values.order_service.resources.limits.cpu }}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+spec:
+  selector:
+    app: paymentflow
+    component: order-service
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+  type: ClusterIP

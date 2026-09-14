@@ -1,0 +1,19 @@
+global:
+  environment: "int"
+  imageTag: "int"
+
+api-gateway:
+  replicas: 1
+
+order-service:
+  replicas: 1
+
+payment-service:
+  replicas: 1
+
+notification-service:
+  replicas: 1
+
+postgresql:
+  replicas: 1
+

@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  labels:
+    app: paymentflow
+    component: notification-service
+spec:
+  replicas: {{ .Values.notification_service.replicas }}
+  selector:
+    matchLabels:
+      app: paymentflow
+      component: notification-service
+  template:
+    metadata:
+      labels:
+        app: paymentflow
+        component: notification-service
+      annotations:
+        config.checksum: "{{ .Values.global.configChecksum }}"
+    spec:
+      containers:
+      - name: notification-service
+        image: "{{ .Values.notification_service.image }}:{{ .Values.global.imageTag }}"
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        env:
+        - name: APP_ENV
+          value: "{{ .Values.global.environment }}"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "{{ .Values.notification_service.resources.requests.memory }}"
+            cpu: "{{ .Values.notification_service.resources.requests.cpu }}"
+          limits:
+            memory: "{{ .Values.notification_service.resources.limits.memory }}"
+            cpu: "{{ .Values.notification_service.resources.limits.cpu }}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+spec:
+  selector:
+    app: paymentflow
+    component: notification-service
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+  type: ClusterIP
